@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ArtifactsWorkspaceSettings">
+    <artifacts-to-build>
+      <artifact name="ftp_demo_app:jar" />
+    </artifacts-to-build>
+  </component>
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="8525e0c9-92ad-4192-be1a-36d624483e9e" name="Changes" comment="Initial commit">
+      <change afterPath="$PROJECT_DIR$/.idea/libraries/mysql_connector_j_9_7_0.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/client/view/TransferProgressDialog.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/server/dao/DatabaseConnection.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/server/dao/FileShareDAO.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/server/dao/GroupDAO.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/server/dao/UserDAO.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/server/model/Group.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/server/util/EmailUtil.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/server/util/PasswordUtil.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server_config.properties" beforeDir="false" afterPath="$PROJECT_DIR$/server_config.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/controller/AppLoginController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/client/controller/AppLoginController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/controller/FTPClientController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/client/controller/FTPClientController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/controller/FTPServerController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/server/controller/FTPServerController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/model/AuthModel.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/server/model/AuthModel.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/model/FTPClientModel.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/client/model/FTPClientModel.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/model/FTPServerModel.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/server/model/FTPServerModel.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/model/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/server/model/User.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/view/AppLoginView.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/client/view/AppLoginView.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/view/FTPClientView.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/client/view/FTPClientView.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/view/FTPServerView.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/server/view/FTPServerView.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/META-INF/MANIFEST.MF" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/META-INF/MANIFEST.MF" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/META-INF/MANIFEST.MF" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/META-INF/MANIFEST.MF" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/controller/AppLoginController.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/controller/FTPClientController.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/controller/FTPServerController.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/model/AuthModel.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/model/FTPClientModel.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/model/FTPServerModel$ClientHandler.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/model/FTPServerModel.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/model/User.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/view/AppLoginView.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/view/FTPClientView$1.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/view/FTPClientView.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/classes/view/FTPServerView.class" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="ROOT_SYNC" value="SYNC" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;DanhQA12&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/DanhQA12/ftp_demo_app.git&quot;,
+    &quot;accountId&quot;: &quot;4fae6c8e-bce7-4e21-8493-bcd85f146fde&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 1,
+  &quot;fromUser&quot;: false
+}</component>
+  <component name="ProjectId" id="3GxM6fBkuZhVmegq07RGv8NluDj" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.AppLoginController.executor": "Run",
+    "Application.FTPClientController.executor": "Run",
+    "Application.FTPServerController.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "git-widget-placeholder": "master",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "D:/IT/2nd_years_hk3/lap_trinh_mang/thuc_hanh/ftp_demo_app",
+    "project.structure.last.edited": "Modules",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.23793103",
+    "settings.editor.selected.configurable": "project.propVCSSupport.DirectoryMappings"
+  },
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "mysql"
+    ]
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CreateClassDialog.RecentsKey">
+      <recent name="server.util" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\IT\2nd_years_hk3\lap_trinh_mang\thuc_hanh\ftp_demo_app\src\main\java" />
+      <recent name="D:\IT\2nd_years_hk3\lap_trinh_mang\thuc_hanh\ftp_demo_app\src\main" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="AppLoginController" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="client.controller.AppLoginController" />
+      <module name="ftp_demo_app" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="client.controller.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Application.AppLoginController" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-30f59d01ecdd-37e91769500f-intellij.indexing.shared.core-IU-261.24374.151" />
+        <option value="bundled-js-predefined-d6986cc7102b-31caf2ab9e3c-JavaScript-IU-261.24374.151" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="8525e0c9-92ad-4192-be1a-36d624483e9e" name="Changes" comment="" />
+      <created>1784908594822</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1784908594822</updated>
+    </task>
+    <task id="LOCAL-00001" summary="Initial commit">
+      <option name="closed" value="true" />
+      <created>1785431404606</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1785431404606</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <ignored-roots>
+      <path value="$PROJECT_DIR$" />
+      <path value="$PROJECT_DIR$/src" />
+    </ignored-roots>
+    <MESSAGE value="Initial commit" />
+    <option name="LAST_COMMIT_MESSAGE" value="Initial commit" />
+  </component>
+</project>

