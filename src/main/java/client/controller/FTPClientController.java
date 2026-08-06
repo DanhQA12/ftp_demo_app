@@ -27,12 +27,20 @@ public class FTPClientController {
     private final String username;
     private final String password;
 
+    private boolean isNotificationRead = false;
+
     public FTPClientController(FTPClientModel model, FTPClientView view, String username, String password) {
         this.model = model;
         this.view = view;
         this.username = username;
         this.password = password;
 
+        initControllerEvents();
+        connectToServer(false);
+    }
+
+    private void initControllerEvents() {
+        // Nút bấm chính
         this.view.getBtnRefresh().addActionListener(e -> {
             if (!model.isAuthenticated()) {
                 connectToServer(true);
@@ -41,26 +49,26 @@ public class FTPClientController {
             }
         });
 
+        this.view.getBtnNotification().addActionListener(e -> handleShowNotificationDialog());
         this.view.getBtnUpload().addActionListener(e -> uploadFiles());
         this.view.getBtnDownload().addActionListener(e -> downloadFileWithFolderChooser());
-        this.view.getBtnDelete().addActionListener(e -> deleteFile());
-        this.view.getBtnExit().addActionListener(e -> handleLogout());
-        // Sự kiện các Nút bấm
-        this.view.getBtnUpload().addActionListener(e -> uploadFiles());
-        this.view.getBtnDownload().addActionListener(e -> downloadFileWithFolderChooser());
-        this.view.getBtnMkdir().addActionListener(e -> handleCreateDirectory()); // <-- Bổ sung
-        this.view.getBtnShare().addActionListener(e -> handleShareFile());        // <-- Bổ sung
+        this.view.getBtnMkdir().addActionListener(e -> handleCreateDirectory());
+        this.view.getBtnShare().addActionListener(e -> handleShareFile());
         this.view.getBtnDelete().addActionListener(e -> deleteFile());
         this.view.getBtnExit().addActionListener(e -> handleLogout());
 
-        // Sự kiện các item trên Menu Chuột Phải
+        // Sự kiện chuyển Tab trên JTabbedPane
+        this.view.getTabbedPane().addChangeListener(e -> {
+            int selectedIndex = this.view.getTabbedPane().getSelectedIndex();
+            this.view.attachTableToTab(selectedIndex);
+            refreshFileList();
+        });
+
+        // Context Menu (Chuột phải)
         this.view.getMenuShare().addActionListener(e -> handleShareFile());
         this.view.getMenuMkdir().addActionListener(e -> handleCreateDirectory());
         this.view.getMenuDownload().addActionListener(e -> downloadFileWithFolderChooser());
         this.view.getMenuDelete().addActionListener(e -> deleteFile());
-
-
-        connectToServer(false);
     }
 
     private void connectToServer(boolean forceReconfig) {
@@ -143,15 +151,63 @@ public class FTPClientController {
 
     private void refreshFileList() {
         if (!model.isAuthenticated()) return;
+
+        int selectedTab = view.getTabbedPane().getSelectedIndex();
+        boolean isSharedTab = (selectedTab == 1);
+
         new Thread(() -> {
             try {
-                List<String> files = model.fetchFileList();
+                List<String> files = isSharedTab ? model.fetchSharedFileList() : model.fetchFileList();
+
                 SwingUtilities.invokeLater(() -> {
-                    view.updateFileList(files);
+                    // Nếu đã đọc rồi thì giữ nguyên (0), chưa đọc mới cập nhật số lượng
+                    if (isNotificationRead) {
+                        view.setNotificationCount(0);
+                    } else {
+                        try {
+                            List<String> sharedFiles = model.fetchSharedFileList();
+                            view.setNotificationCount(sharedFiles.size());
+                        } catch (Exception ignored) {}
+                    }
+
+                    view.updateFileList(files, isSharedTab);
                     view.appendLog("Đã cập nhật danh sách tệp từ Server.");
                 });
             } catch (IOException ex) {
-                SwingUtilities.invokeLater(() -> view.showError("Lỗi khi lấy danh sách tệp."));
+                SwingUtilities.invokeLater(() -> view.showError("Lỗi khi lấy danh sách tệp từ Server."));
+            }
+        }).start();
+    }
+
+    private void handleShowNotificationDialog() {
+        if (!model.isAuthenticated()) {
+            view.showError("Bạn chưa kết nối tới Server!");
+            return;
+        }
+
+        // Đánh dấu đã đọc & cập nhật ngay lập tức về (0)
+        isNotificationRead = true;
+        view.resetNotificationCount();
+
+        new Thread(() -> {
+            try {
+                List<String> sharedFiles = model.fetchSharedFileList();
+                SwingUtilities.invokeLater(() -> {
+                    if (sharedFiles.isEmpty()) {
+                        JOptionPane.showMessageDialog(
+                                view,
+                                "Hiện tại bạn chưa nhận được tệp hoặc thư mục chia sẻ nào.",
+                                "Thông báo chia sẻ",
+                                JOptionPane.INFORMATION_MESSAGE
+                        );
+                    } else {
+                        FTPClientView.SharedNotificationDialog dialog =
+                                new FTPClientView.SharedNotificationDialog(view, sharedFiles);
+                        dialog.setVisible(true);
+                    }
+                });
+            } catch (IOException ex) {
+                SwingUtilities.invokeLater(() -> view.showError("Lỗi khi tải thông báo từ Server."));
             }
         }).start();
     }
@@ -170,7 +226,6 @@ public class FTPClientController {
         if (selectedFiles != null && selectedFiles.length > 0) {
             new Thread(() -> {
                 for (File file : selectedFiles) {
-                    // Tạo Pop-up Cửa sổ Tiến trình riêng
                     TransferProgressDialog progressDialog = new TransferProgressDialog(view, "Đang tải lên Server", file.getName());
                     SwingUtilities.invokeLater(() -> progressDialog.setVisible(true));
 
@@ -215,7 +270,6 @@ public class FTPClientController {
             File destinationFolder = new File(directory);
 
             new Thread(() -> {
-                // Tạo Pop-up Cửa sổ Tiến trình riêng
                 TransferProgressDialog progressDialog = new TransferProgressDialog(view, "Đang tải xuống Máy tính", fileName);
                 SwingUtilities.invokeLater(() -> progressDialog.setVisible(true));
 
@@ -269,6 +323,7 @@ public class FTPClientController {
             });
         }).start();
     }
+
     private void handleCreateDirectory() {
         if (!model.isAuthenticated()) {
             view.showError("Bạn chưa kết nối hoặc chưa được xác thực!");
@@ -301,7 +356,6 @@ public class FTPClientController {
         }
     }
 
-    // Xử lý Chia sẻ tệp/thư mục cho User khác
     private void handleShareFile() {
         if (!model.isAuthenticated()) {
             view.showError("Bạn chưa kết nối hoặc chưa được xác thực!");

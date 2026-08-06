@@ -37,9 +37,22 @@ public class FTPClientModel {
         return socket != null && socket.isConnected() && !socket.isClosed() && authenticated;
     }
 
+    // Lấy danh sách tệp cá nhân (Tab 1)
     public List<String> fetchFileList() throws IOException {
         if (!isAuthenticated()) return Collections.emptyList();
         out.println("list");
+        List<String> files = new ArrayList<>();
+        String response;
+        while ((response = in.readLine()) != null && !response.equals("END_OF_LIST")) {
+            files.add(response);
+        }
+        return files;
+    }
+
+    // Lấy danh sách tệp/thông báo được chia sẻ (Tab 2)
+    public List<String> fetchSharedFileList() throws IOException {
+        if (!isAuthenticated()) return Collections.emptyList();
+        out.println("list_shared");
         List<String> files = new ArrayList<>();
         String response;
         while ((response = in.readLine()) != null && !response.equals("END_OF_LIST")) {
@@ -60,7 +73,6 @@ public class FTPClientModel {
             long uploadedBytes = 0;
 
             while ((bytesRead = fileIn.read(buffer)) > 0) {
-                // Kiểm tra trạng thái Tạm dừng / Hủy từ Pop-up Dialog
                 if (dialog != null) {
                     while (dialog.isPaused() && !dialog.isCancelled()) {
                         try { Thread.sleep(200); } catch (InterruptedException ignored) {}
@@ -93,7 +105,6 @@ public class FTPClientModel {
             long downloadedBytes = 0;
 
             while (downloadedBytes < fileSize && (bytesRead = dataIn.read(buffer)) != -1) {
-                // Kiểm tra trạng thái Tạm dừng / Hủy từ Pop-up Dialog
                 if (dialog != null) {
                     while (dialog.isPaused() && !dialog.isCancelled()) {
                         try { Thread.sleep(200); } catch (InterruptedException ignored) {}
@@ -122,7 +133,6 @@ public class FTPClientModel {
         } catch (IOException ignored) {}
     }
 
-    // Gửi lệnh tạo thư mục mới trên Server
     public boolean createDirectory(String folderName) throws IOException {
         if (!isAuthenticated()) throw new IOException("Chưa xác thực.");
         out.println("mkdir " + folderName);
@@ -130,11 +140,11 @@ public class FTPClientModel {
         return "MKDIR_SUCCESS".equals(response);
     }
 
-    // Gửi lệnh chia sẻ tệp/thư mục cho User khác
     public boolean shareFile(String fileName, String targetUsername) throws IOException {
-        if (!isAuthenticated()) throw new IOException("Chưa xác thực.");
-        out.println("share " + fileName + " " + targetUsername);
+        // Gửi lệnh 'share' viết thường
+        out.println("share " + fileName + "|" + targetUsername);
+
         String response = in.readLine();
-        return "SHARE_SUCCESS".equals(response);
+        return response != null && response.startsWith("SHARE_SUCCESS");
     }
 }

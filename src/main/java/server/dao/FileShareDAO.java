@@ -4,6 +4,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FileShareDAO {
     // Tìm user_id qua username
@@ -52,4 +55,56 @@ public class FileShareDAO {
             return false;
         }
     }
+
+    // Lấy danh sách tệp/thư mục được người khác chia sẻ từ bảng notifications chuẩn 5 cột
+    public List<String> getSharedFilesForUser(int userId) {
+        List<String> list = new ArrayList<>();
+        String sql = "SELECT n.message, n.created_at, u.username AS sender_name " +
+                "FROM notifications n " +
+                "JOIN users u ON n.sender_id = u.user_id " +
+                "WHERE n.receiver_id = ? " +
+                "ORDER BY n.created_at DESC";
+
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                String msg = rs.getString("message");
+                java.sql.Timestamp createdAt = rs.getTimestamp("created_at");
+                String senderName = rs.getString("sender_name");
+                String dateStr = (createdAt != null) ? sdf.format(createdAt) : "--";
+
+                // Tách tên tệp gốc ra khỏi câu thông báo
+                String fileName = msg;
+                if (fileName.startsWith("Tệp: ")) {
+                    fileName = fileName.substring(5);
+                }
+                if (fileName.contains(" (Được chia sẻ bởi")) {
+                    fileName = fileName.substring(0, fileName.indexOf(" (Được chia sẻ bởi"));
+                }
+                fileName = fileName.trim();
+
+                String typeStr = fileName.contains(".")
+                        ? fileName.substring(fileName.lastIndexOf(".") + 1).toUpperCase() + " File"
+                        : "File";
+
+                // Lấy dung lượng tệp thực tế từ thư mục của người gửi trên Server
+                java.io.File sharedFile = new java.io.File("server_files/users/" + senderName + "/" + fileName);
+                String sizeStr = "--";
+                if (sharedFile.exists() && sharedFile.isFile()) {
+                    sizeStr = String.valueOf(sharedFile.length()); // Trả về số Bytes thực tế
+                }
+
+                // Định dạng 5 cột chuẩn: Name|Date|Type|Size|Sender
+                list.add(fileName + "|" + dateStr + "|" + typeStr + "|" + sizeStr + "|" + senderName);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
 }

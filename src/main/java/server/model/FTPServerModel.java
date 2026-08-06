@@ -1,11 +1,14 @@
 package server.model;
 
 import server.dao.DatabaseConnection;
+import server.dao.FileShareDAO;
 
 import java.io.*;
 import java.net.*;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.function.Consumer;
 
 public class FTPServerModel {
@@ -77,6 +80,7 @@ public class FTPServerModel {
         private DataInputStream dataIn;
         private DataOutputStream dataOut;
         private User currentUser = null;
+        private final FileShareDAO fileShareDAO = new FileShareDAO();
 
         public ClientHandler(Socket socket, Consumer<String> logger) {
             this.socket = socket;
@@ -160,7 +164,9 @@ public class FTPServerModel {
                 return;
             }
 
-            if (command.startsWith("list")) {
+            if (command.startsWith("list_shared")) {
+                sendSharedFileList();
+            } else if (command.startsWith("list")) {
                 sendFileList();
             } else if (command.startsWith("upload ")) {
                 if (!currentUser.isCanUpload()) {
@@ -178,30 +184,68 @@ public class FTPServerModel {
                 sendFile(command.substring(9));
             } else if (command.startsWith("delete ")) {
                 deleteFile(command.substring(7));
+            } else if (command.startsWith("mkdir ")) {
+                createDirectory(command.substring(6).trim());
+            } else if (command.toLowerCase().startsWith("share ")) {
+                shareFile(command.substring(6).trim());
             }
         }
 
+        /**
+         * Gửi danh sách tệp đầy đủ thông tin: Tên | Ngày | Loại | Dung lượng (Bytes)
+         */
         private void sendFileList() {
             File dir = new File(getUserWorkingDir());
             if (!dir.exists()) dir.mkdirs();
 
-            String[] files = dir.list();
+            File[] files = dir.listFiles();
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+
             if (files != null) {
-                for (String file : files) out.println(file);
+                for (File file : files) {
+                    String fileName = file.getName();
+                    String dateStr = sdf.format(new Date(file.lastModified()));
+                    boolean isFolder = file.isDirectory();
+
+                    String typeStr;
+                    if (isFolder) {
+                        typeStr = "File folder";
+                    } else if (fileName.contains(".")) {
+                        typeStr = fileName.substring(fileName.lastIndexOf(".") + 1).toUpperCase() + " File";
+                    } else {
+                        typeStr = "File";
+                    }
+
+                    long fileSize = isFolder ? 0 : file.length();
+
+                    // Gửi chuỗi dạng: Name|Date Modified|Type|Size
+                    out.println(fileName + "|" + dateStr + "|" + typeStr + "|" + fileSize);
+                }
             }
             out.println("END_OF_LIST");
             logger.accept("Đã gửi danh sách tệp cho người dùng: " + currentUser.getUsername());
         }
 
+        private void sendSharedFileList() {
+            java.util.List<String> sharedItems = fileShareDAO.getSharedFilesForUser(currentUser.getUserId());
+            for (String item : sharedItems) {
+                out.println(item);
+            }
+            out.println("END_OF_LIST");
+            logger.accept("Đã gửi danh sách tệp được chia sẻ cho: " + currentUser.getUsername());
+        }
+
         private void receiveFile(String fileName) {
+            File workDir = new File(getUserWorkingDir());
+            if (!workDir.exists()) workDir.mkdirs();
+
+            File file = new File(workDir, fileName);
+            boolean completed = false;
+
             try {
                 long fileSize = dataIn.readLong();
                 if (fileSize < 0) return;
 
-                File workDir = new File(getUserWorkingDir());
-                if (!workDir.exists()) workDir.mkdirs();
-
-                File file = new File(workDir, fileName);
                 try (FileOutputStream fileOut = new FileOutputStream(file)) {
                     byte[] buffer = new byte[131072];
                     int bytesRead;
@@ -211,13 +255,27 @@ public class FTPServerModel {
                         fileOut.write(buffer, 0, bytesRead);
                         receivedBytes += bytesRead;
                     }
+
+                    // Kiểm tra xem đã nhận đủ 100% dung lượng chưa
+                    if (receivedBytes == fileSize) {
+                        completed = true;
+                    }
                 }
 
-                out.println("UPLOAD_SUCCESS");
-                logger.accept("Tải lên thành công từ " + currentUser.getUsername() + ": " + fileName);
+                if (completed) {
+                    out.println("UPLOAD_SUCCESS");
+                    logger.accept("Tải lên thành công từ " + currentUser.getUsername() + ": " + fileName);
+                } else {
+                    // Nếu bị bấm Hủy / Ngắt giữa chừng -> XÓA FILE DỞ DANG
+                    if (file.exists()) file.delete();
+                    out.println("UPLOAD_CANCELLED");
+                    logger.accept("Đã hủy tải lên và dọn dẹp file dở dang: " + fileName);
+                }
             } catch (IOException e) {
+                // Nếu đứt Socket / Lỗi mạng -> XÓA FILE DỞ DANG
+                if (file.exists()) file.delete();
                 out.println("UPLOAD_ERROR");
-                logger.accept("Lỗi khi nhận tệp từ " + currentUser.getUsername() + ": " + fileName);
+                logger.accept("Lỗi/Ngắt kết nối khi nhận tệp từ " + currentUser.getUsername() + ": " + fileName);
             }
         }
 
@@ -249,6 +307,58 @@ public class FTPServerModel {
                 logger.accept("Tệp đã bị xóa bởi " + currentUser.getUsername() + ": " + fileName);
             } else {
                 logger.accept("Xóa tệp thất bại bởi " + currentUser.getUsername() + ": " + fileName);
+            }
+        }
+
+        private void createDirectory(String folderName) {
+            if (folderName.isEmpty()) {
+                out.println("MKDIR_FAILED");
+                return;
+            }
+
+            File workDir = new File(getUserWorkingDir());
+            if (!workDir.exists()) workDir.mkdirs();
+
+            File newDir = new File(workDir, folderName);
+            if (!newDir.exists() && newDir.mkdirs()) {
+                out.println("MKDIR_SUCCESS");
+                logger.accept("Thư mục mới '" + folderName + "' được tạo thành công bởi: " + currentUser.getUsername());
+            } else {
+                out.println("MKDIR_FAILED");
+                logger.accept("Tạo thư mục thất bại (đã tồn tại hoặc tên lỗi): " + folderName);
+            }
+        }
+
+        private void shareFile(String args) {
+            // Tách chuỗi theo dấu pipe '|' thay vì khoảng trắng ' '
+            String[] parts = args.split("\\|", 2);
+            if (parts.length < 2) {
+                out.println("SHARE_FAILED");
+                return;
+            }
+
+            String fileName = parts[0].trim();
+            String targetUsername = parts[1].trim();
+
+            int targetUserId = fileShareDAO.getUserIdByUsername(targetUsername);
+
+            if (targetUserId != -1) {
+                boolean created = fileShareDAO.createNotification(
+                        currentUser.getUserId(),
+                        targetUserId,
+                        "Chia sẻ tệp mới",
+                        "Tệp: " + fileName + " (Được chia sẻ bởi " + currentUser.getUsername() + ")"
+                );
+
+                if (created) {
+                    out.println("SHARE_SUCCESS");
+                    logger.accept("Đã ghi nhận chia sẻ '" + fileName + "' từ " + currentUser.getUsername() + " tới " + targetUsername);
+                } else {
+                    out.println("SHARE_FAILED");
+                }
+            } else {
+                out.println("SHARE_FAILED");
+                logger.accept("Chia sẻ thất bại: Không tìm thấy người dùng '" + targetUsername + "' trong CSDL.");
             }
         }
     }
