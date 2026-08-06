@@ -1,5 +1,6 @@
 package server.dao;
 
+import server.config.DatabaseConnection;
 import server.model.User;
 import server.util.PasswordUtil;
 

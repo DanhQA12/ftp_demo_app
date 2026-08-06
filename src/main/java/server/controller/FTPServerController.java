@@ -33,7 +33,7 @@ public class FTPServerController {
         this.view.getExitButton().addActionListener(e -> System.exit(0));
     }
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         FTPServerModel model = new FTPServerModel(5000);
         FTPServerView view = new FTPServerView();
         new FTPServerController(model, view);
