@@ -75,20 +75,18 @@ public class RegisterView extends JDialog {
                 return;
             }
 
-            btnSendOtp.setEnabled(false);
-            btnSendOtp.setText("Đang gửi...");
+            // 1. Phản hồi ngay lập tức cho người dùng biết hệ thống đang xử lý
+            JOptionPane.showMessageDialog(this, "Đang gửi mã OTP đến: " + email + "\nVui lòng kiểm tra hộp thư!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
 
+            // 2. Chạy ngầm việc gửi mail phía sau
             new Thread(() -> {
                 boolean sent = authModel.sendOtp(email);
-                SwingUtilities.invokeLater(() -> {
-                    btnSendOtp.setEnabled(true);
-                    btnSendOtp.setText("Gửi OTP");
-                    if (sent) {
-                        JOptionPane.showMessageDialog(this, "Mã OTP đã được gửi đến email " + email + ". Hãy kiểm tra hộp thư!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-                    } else {
-                        JOptionPane.showMessageDialog(this, "Gửi email thất bại! Hãy kiểm tra lại kết nối mạng hoặc cấu hình Gmail.", "Lỗi", JOptionPane.ERROR_MESSAGE);
-                    }
-                });
+                if (!sent) {
+                    // Nếu gửi thất bại ở luồng ngầm thì mới báo lỗi cho người dùng biết
+                    SwingUtilities.invokeLater(() -> {
+                        JOptionPane.showMessageDialog(this, "Gửi email thất bại! Hãy kiểm tra lại kết nối mạng.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    });
+                }
             }).start();
         });
 
