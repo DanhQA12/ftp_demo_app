@@ -43,9 +43,8 @@ public class FTPServerModel {
     }
 
     private void initDirectories() {
-        new File(rootDir + "public_anonymous/").mkdirs();
+        new File(rootDir + "public/").mkdirs();
         new File(rootDir + "users/").mkdirs();
-        // Đã xóa phần khởi tạo groups/Public
     }
 
     public void startServer(Consumer<String> logger, Runnable onStop) {

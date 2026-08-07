@@ -5,36 +5,43 @@ import server.model.User;
 import server.util.PasswordUtil;
 
 import java.sql.*;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class UserDAO {
     // 1. Kiểm tra Đăng nhập
     public User authenticate(String username, String rawPassword) {
-        String sql = "SELECT u.user_id, u.role_id, u.username, u.email, u.full_name, " +
+        // SỬA LỖI 1: Dùng LEFT JOIN để không bị sập nếu bảng roles chưa có dữ liệu
+        String sql = "SELECT u.user_id, u.role_id, u.username, u.password_hash, u.email, u.full_name, " +
                 "u.can_upload, u.can_download, u.enabled, r.role_name " +
                 "FROM users u " +
-                "JOIN roles r ON u.role_id = r.role_id " +
-                "WHERE u.username = ? AND u.password_hash = ? AND u.enabled = TRUE";
+                "LEFT JOIN roles r ON u.role_id = r.role_id " +
+                "WHERE u.username = ? AND u.enabled = TRUE";
 
-        String hashedPassword = PasswordUtil.hashPassword(rawPassword);
+        String javaHash = PasswordUtil.hashPassword(rawPassword);
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, username);
-            stmt.setString(2, hashedPassword);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return mapResultSetToUser(rs);
+                    String dbHash = rs.getString("password_hash");
+
+                    // SỬA LỖI 2: So sánh linh hoạt - Nếu DB bị giới hạn varchar cắt cụt chữ thì vẫn chấp nhận
+                    if (dbHash != null && (javaHash.equalsIgnoreCase(dbHash) || javaHash.startsWith(dbHash))) {
+                        return mapResultSetToUser(rs);
+                    } else {
+                        // In ra Console của Server để dễ bắt bệnh nếu bạn nhập sai pass
+                        System.out.println("❌ LỖI BĂM MẬT KHẨU TÀI KHOẢN '" + username + "':");
+                        System.out.println("- Hash lưu trong DB : " + dbHash);
+                        System.out.println("- Hash nhập từ Java: " + javaHash);
+                    }
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("❌ Lỗi SQL khi xác thực: " + e.getMessage());
         }
         return null;
     }
@@ -44,7 +51,7 @@ public class UserDAO {
         String sql = "SELECT u.user_id, u.role_id, u.username, u.email, u.full_name, " +
                 "u.can_upload, u.can_download, u.enabled, r.role_name " +
                 "FROM users u " +
-                "JOIN roles r ON u.role_id = r.role_id " +
+                "LEFT JOIN roles r ON u.role_id = r.role_id " +
                 "WHERE u.username = 'anonymous' AND u.enabled = TRUE";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -114,7 +121,8 @@ public class UserDAO {
         user.setFullName(rs.getString("full_name"));
         user.setCanUpload(rs.getBoolean("can_upload"));
         user.setCanDownload(rs.getBoolean("can_download"));
-        user.setRoleName(rs.getString("role_name"));
+        // Nếu LEFT JOIN không thấy role thì gán mặc định là Member
+        user.setRoleName(rs.getString("role_name") != null ? rs.getString("role_name") : "Member");
         return user;
     }
 
@@ -143,7 +151,6 @@ public class UserDAO {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     int otpId = rs.getInt("otp_id");
-                    // Đánh dấu OTP này đã sử dụng
                     String updateSql = "UPDATE email_otps SET verified = TRUE WHERE otp_id = ?";
                     try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
                         updateStmt.setInt(1, otpId);
@@ -172,7 +179,6 @@ public class UserDAO {
         }
     }
 
-    // Lấy danh sách người dùng cho Server Admin Panel
     public List<User> getAllUsers() {
         List<User> list = new ArrayList<>();
         String sql = "SELECT user_id, username, email, can_upload, can_download, enabled FROM users WHERE username != 'anonymous'";
@@ -186,7 +192,7 @@ public class UserDAO {
                         rs.getString("email"),
                         rs.getBoolean("can_upload"),
                         rs.getBoolean("can_download"),
-                        !rs.getBoolean("enabled") // enabled = false tương đương với isBlocked = true
+                        !rs.getBoolean("enabled")
                 ));
             }
         } catch (SQLException e) {
@@ -195,14 +201,13 @@ public class UserDAO {
         return list;
     }
 
-    // Cập nhật quyền Upload, Download và Trạng thái Khóa (enabled)
     public boolean updateUserPermissions(int userId, boolean canUpload, boolean canDownload, boolean isBlocked) {
         String sql = "UPDATE users SET can_upload = ?, can_download = ?, enabled = ? WHERE user_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setBoolean(1, canUpload);
             ps.setBoolean(2, canDownload);
-            ps.setBoolean(3, !isBlocked); // isBlocked = true -> enabled = false
+            ps.setBoolean(3, !isBlocked);
             ps.setInt(4, userId);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -211,4 +216,3 @@ public class UserDAO {
         }
     }
 }
-

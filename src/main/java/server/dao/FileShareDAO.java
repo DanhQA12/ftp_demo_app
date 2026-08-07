@@ -1,7 +1,6 @@
 package server.dao;
 
 import server.config.DatabaseConnection;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -11,102 +10,114 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FileShareDAO {
-    // Tìm user_id qua username
+
     public int getUserIdByUsername(String username) {
         String sql = "SELECT user_id FROM users WHERE username = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) return rs.getInt("user_id");
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt("user_id");
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
         return -1;
     }
 
-    // Thêm Thông báo vào bảng notifications
-    public boolean createNotification(int senderId, int receiverId, String title, String message) {
-        String sql = "INSERT INTO notifications (sender_id, receiver_id, title, message) VALUES (?, ?, ?, ?)";
+    public int getFileIdByPath(String filePath) {
+        String cleanPath = filePath.replace("\\", "/");
+        String sql = "SELECT file_id FROM files WHERE file_path = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, senderId);
-            ps.setInt(2, receiverId);
-            ps.setString(3, title);
-            ps.setString(4, message);
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
+            ps.setString(1, cleanPath);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt("file_id");
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return -1;
     }
 
-    // Ghi nhận Phân quyền Chia sẻ File (ACL)
-    public boolean grantFilePermission(int fileId, int targetUserId, int permissionTypeId, int grantedByUserId) {
+    // Cấp quyền chia sẻ file cho User
+    public boolean shareFileToUser(int fileId, int targetUserId, int permissionTypeId, int grantedById) {
+        // Sử dụng ON DUPLICATE KEY UPDATE để nếu đã share rồi thì chỉ cập nhật quyền mới
         String sql = "INSERT INTO file_permissions (file_id, user_id, permission_type_id, granted_by) " +
-                "VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE permission_type_id = VALUES(permission_type_id)";
+                "VALUES (?, ?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE permission_type_id = VALUES(permission_type_id)";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, fileId);
             ps.setInt(2, targetUserId);
-            ps.setInt(3, permissionTypeId); // 1: READ_ONLY, 2: FULL_CONTROL
-            ps.setInt(4, grantedByUserId);
+            ps.setInt(3, permissionTypeId);
+            ps.setInt(4, grantedById);
             return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return false;
     }
 
-    // Lấy danh sách tệp/thư mục được người khác chia sẻ từ bảng notifications chuẩn 5 cột
+    // Lấy danh sách file được chia sẻ định dạng chuẩn để gửi về Client
     public List<String> getSharedFilesForUser(int userId) {
         List<String> list = new ArrayList<>();
-        String sql = "SELECT n.message, n.created_at, u.username AS sender_name " +
-                "FROM notifications n " +
-                "JOIN users u ON n.sender_id = u.user_id " +
-                "WHERE n.receiver_id = ? " +
-                "ORDER BY n.created_at DESC";
+        String sql = "SELECT f.file_name, f.is_folder, f.file_size, f.created_at, u.username as owner_name, pt.permission_name " +
+                "FROM file_permissions fp " +
+                "JOIN files f ON fp.file_id = f.file_id " +
+                "JOIN users u ON f.owner_id = u.user_id " +
+                "JOIN permission_types pt ON fp.permission_type_id = pt.permission_type_id " +
+                "WHERE fp.user_id = ?";
 
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                String msg = rs.getString("message");
-                java.sql.Timestamp createdAt = rs.getTimestamp("created_at");
-                String senderName = rs.getString("sender_name");
-                String dateStr = (createdAt != null) ? sdf.format(createdAt) : "--";
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String name = rs.getString("file_name");
+                    boolean isFolder = rs.getBoolean("is_folder");
+                    long size = rs.getLong("file_size");
+                    String date = rs.getTimestamp("created_at") != null ? sdf.format(rs.getTimestamp("created_at")) : "";
+                    String owner = rs.getString("owner_name");
 
-                // Tách tên tệp gốc ra khỏi câu thông báo
-                String fileName = msg;
-                if (fileName.startsWith("Tệp: ")) {
-                    fileName = fileName.substring(5);
+                    // Lấy chính xác mã quyền từ DB: "READ_ONLY" hoặc "FULL_CONTROL"
+                    String perm = rs.getString("permission_name");
+
+                    String type = isFolder ? "File folder" : "File";
+                    String sizeStr = isFolder ? "" : String.valueOf(size);
+
+                    // Nối chuỗi theo chuẩn 6 cột: Name | Date | Type | Size | Owner | Permission
+                    list.add(name + "|" + date + "|" + type + "|" + sizeStr + "|" + owner + "|" + perm);
                 }
-                if (fileName.contains(" (Được chia sẻ bởi")) {
-                    fileName = fileName.substring(0, fileName.indexOf(" (Được chia sẻ bởi"));
-                }
-                fileName = fileName.trim();
-
-                String typeStr = fileName.contains(".")
-                        ? fileName.substring(fileName.lastIndexOf(".") + 1).toUpperCase() + " File"
-                        : "File";
-
-                // Lấy dung lượng tệp thực tế từ thư mục của người gửi trên Server
-                java.io.File sharedFile = new java.io.File("server_files/users/" + senderName + "/" + fileName);
-                String sizeStr = "--";
-                if (sharedFile.exists() && sharedFile.isFile()) {
-                    sizeStr = String.valueOf(sharedFile.length()); // Trả về số Bytes thực tế
-                }
-
-                // Định dạng 5 cột chuẩn: Name|Date|Type|Size|Sender
-                list.add(fileName + "|" + dateStr + "|" + typeStr + "|" + sizeStr + "|" + senderName);
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
         return list;
     }
 
+    public boolean removeShare(int userId, String fileName) {
+        String sql = "DELETE fp FROM file_permissions fp " +
+                "JOIN files f ON fp.file_id = f.file_id " +
+                "WHERE fp.user_id = ? AND f.file_name = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            ps.setString(2, fileName);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public String getFilePermissionType(String filePath) {
+        String cleanPath = filePath.replace("\\", "/");
+        String sql = "SELECT pt.permission_name FROM file_permissions fp " +
+                "JOIN files f ON fp.file_id = f.file_id " +
+                "JOIN permission_types pt ON fp.permission_type_id = pt.permission_type_id " +
+                "WHERE f.file_path = ? LIMIT 1";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, cleanPath);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getString("permission_name");
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return "FULL_CONTROL"; // Mặc định nếu không có bản ghi riêng
+    }
 }
